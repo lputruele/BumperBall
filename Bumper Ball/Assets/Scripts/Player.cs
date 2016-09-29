@@ -2,18 +2,22 @@
 using System.Collections;
 
 public class Player : MonoBehaviour {
-	
+
+	//public attributes
 	public bool isHuman;
 	public GameObject[] otherPlayers;
+	public GameObject menu;
+
+	//private attributes
 	private static float moveSpeed = 10;
 	private GameObject target; //for IA only
 	private Rigidbody body;
 	private Vector3 moveInput;
 	private Vector3 moveVelocity;
-	private GameObject ground;
+	private GameObject ground; //reference to the floor
+	private static float groundRadius = 8;
 	private bool hasLost;
-	public GameObject menu;
-	private Vector2 touchStart;
+	private Vector2 touchStart; //for touch controls
 
 	// Use this for initialization
 	void Start () {
@@ -29,7 +33,7 @@ public class Player : MonoBehaviour {
 	void Update () {
 		int i;
 		//check if player is losing
-		if (Vector3.Distance (this.transform.position, ground.transform.position) >= 8) {
+		if (Vector3.Distance (this.transform.position, ground.transform.position) >= groundRadius) {
 			//Debug.Log("Game over " + this.transform.name);
 			hasLost = true;
 			if (isHuman && menu != null){
@@ -53,13 +57,18 @@ public class Player : MonoBehaviour {
 			if (isHuman) {
 				moveInput = Vector3.zero;
 				if (Input.touchCount > 0){
+					Vector2 dir;
 					switch (Input.GetTouch(0).phase){
 					case TouchPhase.Began:
 						touchStart = Input.GetTouch(0).position;
 						break;
 					case TouchPhase.Moved:
-						Vector2 dir = Input.GetTouch(0).position - touchStart;
-						moveInput = new Vector3(dir.x,0f,dir.y);
+						dir = Input.GetTouch(0).position - touchStart;
+						moveInput = new Vector3(dir.x, 0f, dir.y);
+						break;
+					case TouchPhase.Stationary:
+						dir = Input.GetTouch(0).position - touchStart;
+						moveInput = new Vector3(dir.x, 0f, dir.y);
 						break;
 					default:
 						break;
@@ -67,7 +76,7 @@ public class Player : MonoBehaviour {
 				}
 				//moveInput = new Vector3 (Input.GetAxisRaw ("Horizontal"), 0f, Input.GetAxisRaw ("Vertical"));
 			} else {
-				if (Vector3.Distance (this.transform.position, ground.transform.position) >= 6) { //close to falling!
+				if (Vector3.Distance (this.transform.position, ground.transform.position) >= groundRadius - 2) { //close to falling!
 					moveInput = ground.transform.position - this.transform.position;
 				} else {
 					moveInput = target.transform.position - this.transform.position;
@@ -83,7 +92,7 @@ public class Player : MonoBehaviour {
 	void OnCollisionEnter(Collision c) {
 		if (c.rigidbody != null) { //it's not the ground
 			Vector3 dir = c.contacts[0].point - transform.position; //get angle between the collision point and the player
-			float force = c.relativeVelocity.magnitude * 8;
+			float force = c.relativeVelocity.magnitude * 7;
 			dir = -dir.normalized; //get the opposite vector and normalize it
 			body.AddForce(dir*force); //push back the player
 		}
@@ -91,7 +100,7 @@ public class Player : MonoBehaviour {
 
 	//This one is to make sure players always bounce from each other
 	void OnCollisionStay(Collision c){
-		if (c.rigidbody != null) { //it's not the ground
+		if (c.rigidbody != null) {
 			Vector3 dir = c.contacts[0].point - transform.position;
 			float force = c.relativeVelocity.magnitude * 3;
 			dir = -dir.normalized; 
@@ -110,12 +119,5 @@ public class Player : MonoBehaviour {
 		return hasLost;
 	}
 
-	public Rigidbody GetBody(){
-		return body;
-	}
-
-	public Vector3 GetMoveVelocity(){
-		return moveVelocity;
-	}
 	
 }

@@ -2,18 +2,22 @@
 using System.Collections;
 
 public class Player : MonoBehaviour {
-	
+
+	//public attributes
 	public bool isHuman;
 	public GameObject[] otherPlayers;
-	private static float moveSpeed = 10;
+	public GameObject menu;
+
+	//private attributes
+	private static float moveSpeed = 12;
 	private GameObject target; //for IA only
 	private Rigidbody body;
 	private Vector3 moveInput;
 	private Vector3 moveVelocity;
-	private GameObject ground;
+	private GameObject ground; //reference to the floor
+	private static float groundRadius = 8;
 	private bool hasLost;
-	public GameObject menu;
-	private Vector2 touchStart;
+	private Vector2 touchStart; //for the touch controls
 
 	// Use this for initialization
 	void Start () {
@@ -29,8 +33,8 @@ public class Player : MonoBehaviour {
 	void Update () {
 		int i;
 		//check if player is losing
-		if (Vector3.Distance (this.transform.position, ground.transform.position) >= 8) {
-			//Debug.Log("Game over " + this.transform.name);
+		if (Vector3.Distance (transform.position, ground.transform.position) >= groundRadius) {
+			//Debug.Log("Game over " + transform.name);
 			hasLost = true;
 			if (isHuman && menu != null){
 				menu.GetComponent<Menu>().EnableGameOverMenu();
@@ -42,7 +46,7 @@ public class Player : MonoBehaviour {
 				break;
 		}
 		if (i == otherPlayers.Length && !hasLost && menu != null) {
-			//Debug.Log (this.transform.name + "WINS ");
+			//Debug.Log (transform.name + "WINS ");
 			menu.GetComponent<Menu>().EnableGameOverMenu();
 		}
 	}
@@ -67,10 +71,10 @@ public class Player : MonoBehaviour {
 				}
 				//moveInput = new Vector3 (Input.GetAxisRaw ("Horizontal"), 0f, Input.GetAxisRaw ("Vertical"));
 			} else {
-				if (Vector3.Distance (this.transform.position, ground.transform.position) >= 6) { //close to falling!
-					moveInput = ground.transform.position - this.transform.position;
+				if (Vector3.Distance (transform.position, ground.transform.position) >= groundRadius-2) { //close to falling!
+					moveInput = ground.transform.position - transform.position;
 				} else {
-					moveInput = target.transform.position - this.transform.position;
+					moveInput = target.transform.position - transform.position;
 				}
 			}
 			moveInput.Normalize ();
@@ -83,7 +87,7 @@ public class Player : MonoBehaviour {
 	void OnCollisionEnter(Collision c) {
 		if (c.rigidbody != null) { //it's not the ground
 			Vector3 dir = c.contacts[0].point - transform.position; //get angle between the collision point and the player
-			float force = c.relativeVelocity.magnitude * 8;
+			float force = c.relativeVelocity.magnitude * 6;
 			dir = -dir.normalized; //get the opposite vector and normalize it
 			body.AddForce(dir*force); //push back the player
 		}
@@ -91,7 +95,7 @@ public class Player : MonoBehaviour {
 
 	//This one is to make sure players always bounce from each other
 	void OnCollisionStay(Collision c){
-		if (c.rigidbody != null) { //it's not the ground
+		if (c.rigidbody != null) {
 			Vector3 dir = c.contacts[0].point - transform.position;
 			float force = c.relativeVelocity.magnitude * 3;
 			dir = -dir.normalized; 
@@ -102,7 +106,7 @@ public class Player : MonoBehaviour {
 	//IA function that chooses a target player to bump into
 	void ChooseTarget (){
 		int r = Random.Range (0, 3);
-		if (!otherPlayers[r].GetComponent<Player>().GetHasLost())
+		if (!otherPlayers[r].GetComponent<Player>().GetHasLost()) // pick a random target that hasn't lost already
 			target = otherPlayers[r];
 	}
 
@@ -110,12 +114,4 @@ public class Player : MonoBehaviour {
 		return hasLost;
 	}
 
-	public Rigidbody GetBody(){
-		return body;
-	}
-
-	public Vector3 GetMoveVelocity(){
-		return moveVelocity;
-	}
-	
 }
